@@ -3,7 +3,6 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 import keras
-from keras.applications.vgg16 import VGG16, preprocess_input, decode_predictions
 from keras.models import Model
 from keras.layers import Input, Conv2D
 from keras.layers import MaxPooling2D as KMaxPooling2D
@@ -14,20 +13,23 @@ from deconvnet.pool_unpool import MaxPooling2D, UndoMaxPooling2D
 def truncated_model(model, last_layer=None):
     """
     Given a trained network, compute the equivalent
-    truncated model with argmax MaxPooling2D
+    truncated model with argmax MaxPooling2D.
+    Only supports MaxPooling2D and Conv2D layers.
     """
-    _, sx, sy, _ = model.layers[0].input_shape
-    inp = Input(shape=(sx, sy, 3), name=model.layers[0].name)
+    _, sx, sy, chan = model.layers[0].input_shape
+    inp = Input(shape=(sx, sy, chan), name="input")
     x = inp
-    i = 1
+    i = 0
     positions = []
     while i < len(model.layers):
-        if type(model.layers[i]) is KMaxPooling2D:
+        if not type(model.layers[i]) in [KMaxPooling2D, Conv2D]:
+            pass
+        elif type(model.layers[i]) is KMaxPooling2D:
             x, pos = MaxPooling2D(name=model.layers[i].name)(x)
             positions.append(pos)
-        else:
+        elif type(model.layers[i]) is Conv2D:
             x = model.layers[i](x)
-        if model.layers[i].name is last_layer:
+        if model.layers[i].name == last_layer:
             break
         i += 1
     return Model(inputs=inp, outputs=[x]+positions)
@@ -36,8 +38,7 @@ def backward_network(model):
     """
     Given a truncated network containing only Conv2D
     and custom MaxPooling2D layers, compute the reverse
-    deconvnet. The model weights have to be initialized
-    with model.load_weights("path.h5", by_name=True)
+    deconvnet. Only supports MaxPooling2D and Conv2D layers.
     """
     inputs = []
     for j, out in enumerate(model.output):
@@ -61,5 +62,6 @@ def backward_network(model):
                          padding=model.layers[i].padding,
                          name=model.layers[i].name)
             x = l(x)
+            l.set_weights(model.layers[i].get_weights())
         i -= 1
     return Model(inputs=inputs, outputs=x)
