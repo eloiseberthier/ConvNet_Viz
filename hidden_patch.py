@@ -55,7 +55,7 @@ class HiddenPatchAnalysis:
         flatten.append(self.original) # the last one is the original one
         flatten = np.array(flatten)
         to_recognize = tf.convert_to_tensor(flatten)
-        res_hidden = self.model.predict(to_recognize, steps = n, verbose = 1)
+        res_hidden = self.model.predict(to_recognize, steps = None, verbose = 1)
         preds = decode_predictions(res_hidden, top=5)
         return preds
     
