@@ -41,10 +41,14 @@ def backward_network(model):
     deconvnet. Only supports MaxPooling2D and Conv2D layers.
     """
     inputs = []
-    for j, out in enumerate(model.output):
-        _,  a, b, c = out.shape.as_list()
-        inp = Input(batch_shape=(1, a, b, c), name="input_{}".format(j+1))
-        inputs.append(inp)
+    if type(model.output) is list:
+        for j, out in enumerate(model.output):
+            _,  a, b, c = out.shape.as_list()
+            inp = Input(batch_shape=(1, a, b, c), name="input_{}".format(j+1))
+            inputs.append(inp)
+    else: # There is only one output (no MaxPooling2D)
+        _,  a, b, c = model.output.shape.as_list()
+        inputs = [Input(batch_shape=(1, a, b, c), name="input_1")]
     x = inputs[0]
     i = len(model.layers)-1 # Layer count
     k = len(inputs)-1 # MaxPool count
