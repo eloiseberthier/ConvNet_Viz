@@ -60,9 +60,11 @@ def backward_network(model):
             x = l([x, inputs[k]])
             k -= 1
         elif type(model.layers[i]) is Conv2D:
+            # No activation on the last layer :
+            acti = 'relu' if i > 1 else None
             w, b = model.layers[i].weights
             kx, ky, chan_in, chan_out = w.shape.as_list()
-            l = Deconv2D(chan_in, (kx, ky), activation='relu',
+            l = Deconv2D(chan_in, (kx, ky), activation=acti,
                          padding=model.layers[i].padding,
                          name=model.layers[i].name)
             x = l(x)
