@@ -52,12 +52,14 @@ def backward_network(model):
     x = inputs[0]
     i = len(model.layers)-1 # Layer count
     k = len(inputs)-1 # MaxPool count
+    all_outputs = []
     while i > 0:
         if type(model.layers[i]) is MaxPooling2D:
             _, a, b, c = model.layers[i].input_shape
             l = UndoMaxPooling2D(out_shape=(1, a, b, c),
                                  name=model.layers[i].name)
             x = l([x, inputs[k]])
+            all_outputs.append(x)
             k -= 1
         elif type(model.layers[i]) is Conv2D:
             # No activation on the last layer :
@@ -68,6 +70,7 @@ def backward_network(model):
                          padding=model.layers[i].padding,
                          name=model.layers[i].name)
             x = l(x)
+            all_outputs.append(x)
             l.set_weights(model.layers[i].get_weights())
         i -= 1
-    return Model(inputs=inputs, outputs=x)
+    return Model(inputs=inputs, outputs=all_outputs)
